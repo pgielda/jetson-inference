@@ -165,13 +165,10 @@ void process_file(char* file_name)
         for (y=0; y<height; y++) {
                 png_byte* row = row_pointers[y];
                 for (x=0; x<width; x++) {
-                        png_byte* ptr = &(row[x*6]);
+                        png_byte* ptr = &(row[x*3]);
 
-					/*if( x > 640 && ptr[1] > 0 )
-					{
-                        		printf("Pixel at position [ %d - %d ] has RGB values: %d - %d - %d\n",
-                               x, y, ptr[0], ptr[1], ptr[2]);
-					}*/
+                        		printf("Pixel at position [ (x,y) = (%d,%d) ] has RGB values: [%02X%02X%02X] %d - %d - %d\n",
+                               x, y, ptr[0], ptr[1], ptr[2], ptr[0], ptr[1], ptr[2]);
 
 					const int classIdx = ptr[1];
 
@@ -224,75 +221,3 @@ int main(int argc, char **argv)
         return 0;
 }
 
-#if 0
-#include <stdio.h>
-#include <string.h>
-#include <stdint.h>
-#include <QImage>
-
-
-// main entry point
-int main( int argc, char** argv )
-{
-	printf("seg-image-tool\n  args (%i):  ", argc);
-	
-	for( int i=0; i < argc; i++ )
-		printf("%i [%s]  ", i, argv[i]);
-		
-	printf("\n\n");
-	
-	
-	// retrieve filename argument
-	if( argc < 2 )
-	{
-		printf("imagenet-console:   input image filename required\n");
-		return 0;
-	}
-	
-	const char* imgFilename = argv[1];
-	
-	if( argc < 3 )
-	{
-		printf("imagenet-console:   output image filename required\n");
-		return 0;
-	}
-	
-	const char* outFilename = argv[2];
-
-
-	QImage qImg;
-
-	if( !qImg.load(imgFilename) )
-	{
-		printf("failed to load image %s\n", imgFilename);
-		return false;
-	}
-
-	
-	const uint32_t imgWidth  = qImg.width();
-	const uint32_t imgHeight = qImg.height();
-	const uint32_t imgPixels = imgWidth * imgHeight;
-
-	printf("loaded image  %s  (%u x %u)\n", imgFilename, imgWidth, imgHeight);
-
-	
-	
-	for( uint32_t y=0; y < imgHeight; y++ )
-	{
-		for( uint32_t x=0; x < imgWidth; x++ )
-		{
-			const QRgb rgb  = qImg.pixel(x,y);
-			const int r = qRed(rgb);
-			const int g = qGreen(rgb);
-			const int b = qBlue(rgb);
-
-			if( r != 0 || g != 0 || b != 0 )
-				printf("%u %u   %i %i %i\n", x, y, r, g, b);
-		}
-	}
-	
-	
-
-	return 0;
-}
-#endif
