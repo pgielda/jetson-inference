@@ -1,5 +1,5 @@
 /*
- * 
+ *  original file: Dustin Franklin (NVIDIA)
  */
 
 #include <unistd.h>
@@ -144,6 +144,35 @@ void write_png_file(char* file_name)
 
 #include <QImage>
 
+#define FORMAT_RGB24 0
+#define FORMAT_INDEXED8 1
+
+#define FORMAT FORMAT_INDEXED8
+
+unsigned char palette[21][3] = {
+	{ 0,0,0 },
+	{ 111,74,0 },
+	{ 81,0,81 },
+	{ 128,64,128 },
+	{ 244,35,232 },
+	{ 250,170,160 },
+	{ 70,70,70 },
+	{ 102,102,156 },
+	{ 190,153,153 },
+	{ 180,165,180 },
+	{ 150,100,100 },
+	{ 153,153,153 },
+	{ 250,170,30 },
+	{ 220,220,0 },
+	{ 107,142,35 },
+	{ 152,251,152 },
+	{ 70,130,180 },
+	{ 220,20,60 },
+	{ 0,0,142 },
+	{ 0,0,70 },
+	{ 119,11,32 },
+};
+
 void process_file(char* file_name)
 {
         /*if (png_get_color_type(png_ptr, info_ptr) == PNG_COLOR_TYPE_RGB)
@@ -160,15 +189,29 @@ void process_file(char* file_name)
 
 	printf("width %d   height %d   bit depth %d\n", width, height, bit_depth);
 
-	QImage img(width, height, QImage::Format_RGB32);
+       QImage img;
+       QRgb colors[255];
+       int colors_count = 21;
+       for (int i = 0; i < colors_count; i++) {
+       	colors[i] = qRgb(palette[i][0], palette[i][1], palette[i][2]);
+       }
+
+        if (FORMAT == FORMAT_RGB24) {
+		img = QImage(width, height, QImage::Format_RGB32);
+	} else if (FORMAT == FORMAT_INDEXED8) {
+		img = QImage(width, height, QImage::Format_Indexed8);
+		for (int i = 0; i < colors_count; i++) img.setColor(i,colors[i]);
+        }
 
         for (y=0; y<height; y++) {
                 png_byte* row = row_pointers[y];
                 for (x=0; x<width; x++) {
                         png_byte* ptr = &(row[x*3]);
 
-                        		printf("Pixel at position [ (x,y) = (%d,%d) ] has RGB values: [%02X%02X%02X] %d - %d - %d\n",
-                               x, y, ptr[0], ptr[1], ptr[2], ptr[0], ptr[1], ptr[2]);
+
+#if 0
+                       // 		printf("Pixel at position [ (x,y) = (%d,%d) ] has RGB values: [%02X%02X%02X] %d - %d - %d\n",
+                       //        x, y, ptr[0], ptr[1], ptr[2], ptr[0], ptr[1], ptr[2]);
 
 					const int classIdx = ptr[1];
 
@@ -181,7 +224,7 @@ void process_file(char* file_name)
 					int r = 0;	// if( classIdx == 0 || classIdx == 13 || classIdx == 14 )
 					int g = 0;
 					int b = 0;
-	
+
 					if( classIdx == 1 ) { r = 128; g = 128; b = 128; }
 					else if( classIdx == 2 )	{ r = 128; g = 0; b = 0; }
 					else if( classIdx == 3 )	{ r = 128; g = 64; b = 128; }
@@ -196,13 +239,40 @@ void process_file(char* file_name)
 					else if( classIdx == 12 ) { r = 0; g = 172; b = 0; }
 					else if( classIdx == 15 ) { r = 0; g = 128; b = 128; }
 
+#endif
+
+					int r = ptr[0];
+					int g = ptr[1];
+					int b = ptr[2];
+
 					ptr[0] = r;
 					ptr[1] = g;
 					ptr[2] = b;
 
+                                        if (FORMAT == FORMAT_INDEXED8) {
+					     int col = -1;
+					     for (int i = 0; i < colors_count; i++) {
+					         if (colors[i] == qRgb(r,g,b)) {
+						    col = i;
+						    break;
+						 }
+					     }
+					     if (col == -1) {
+					      col = colors_count;
+					      colors_count++;
+					      colors[col] = qRgb(r,g,b);
+					      img.setColor(col,colors[col]);
+					     }
+					     img.setPixel(x, y, col);
+					} else {
 					img.setPixel(x, y, qRgb(r,g,b));
+					}
                 }
         }
+
+        if (FORMAT == FORMAT_INDEXED8) {
+	    printf("Colors used in total: %d\n", colors_count); 
+	}
 
 	if( !img.save(file_name) )
 		printf("failed to save output %s\n", file_name);
